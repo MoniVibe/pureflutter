@@ -1,5 +1,7 @@
 export 'src/multiplayer/backend_health_checker.dart';
 export 'src/multiplayer/multiplayer_client_utils.dart';
+export 'src/multiplayer/multiplayer_models.dart';
+export 'src/multiplayer/multiplayer_transport_client.dart';
 export 'src/skins/skin_models.dart';
 export 'src/ui/app_asset_icon.dart';
 export 'src/ui/collapsible_settings_card.dart';
