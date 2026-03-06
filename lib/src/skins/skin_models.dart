@@ -73,6 +73,7 @@ class ChessPieceSkinOption {
     required this.id,
     required this.label,
     required this.spriteMap,
+    this.pieceScale = 1.0,
     this.tintColor,
     this.isPremium = false,
   });
@@ -80,6 +81,7 @@ class ChessPieceSkinOption {
   final String id;
   final String label;
   final Map<String, String> spriteMap;
+  final double pieceScale;
   final Color? tintColor;
   final bool isPremium;
 }
