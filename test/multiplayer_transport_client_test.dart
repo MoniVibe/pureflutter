@@ -15,6 +15,8 @@ void main() {
         expect(payload['name'], 'PlayerA');
         expect(payload['pieceSkinId'], 'chess_classic');
         expect(payload['cooldownSeconds'], 5);
+        expect(payload['gameType'], 'chess');
+        expect(payload['metadata'], <String, dynamic>{'client': 'smoke'});
         return http.Response(
           jsonEncode(<String, dynamic>{
             'matchId': 'm1',
@@ -32,6 +34,8 @@ void main() {
         displayName: 'PlayerA',
         pieceSkinId: 'chess_classic',
         cooldownSeconds: 5,
+        gameType: 'chess',
+        metadata: <String, dynamic>{'client': 'smoke'},
       );
 
       expect(joined.matchId, 'm1');
