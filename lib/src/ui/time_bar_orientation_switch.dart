@@ -46,24 +46,27 @@ class TimeBarOrientationSwitch extends StatelessWidget {
               ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 6),
-            SegmentedButton<TimeBarOrientation>(
-              showSelectedIcon: false,
-              segments: const <ButtonSegment<TimeBarOrientation>>[
-                ButtonSegment<TimeBarOrientation>(
-                  value: TimeBarOrientation.horizontal,
-                  icon: Icon(Icons.swap_vert_rounded, size: 16),
-                  label: Text('Horizontal'),
-                ),
-                ButtonSegment<TimeBarOrientation>(
-                  value: TimeBarOrientation.vertical,
-                  icon: Icon(Icons.swap_horiz_rounded, size: 16),
-                  label: Text('Vertical'),
-                ),
-              ],
-              selected: <TimeBarOrientation>{orientation},
-              onSelectionChanged: enabled
-                  ? (selection) => onChanged(selection.first)
-                  : null,
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SegmentedButton<TimeBarOrientation>(
+                showSelectedIcon: false,
+                segments: const <ButtonSegment<TimeBarOrientation>>[
+                  ButtonSegment<TimeBarOrientation>(
+                    value: TimeBarOrientation.horizontal,
+                    icon: Icon(Icons.swap_vert_rounded, size: 16),
+                    label: Text('Horizontal'),
+                  ),
+                  ButtonSegment<TimeBarOrientation>(
+                    value: TimeBarOrientation.vertical,
+                    icon: Icon(Icons.swap_horiz_rounded, size: 16),
+                    label: Text('Vertical'),
+                  ),
+                ],
+                selected: <TimeBarOrientation>{orientation},
+                onSelectionChanged: enabled
+                    ? (selection) => onChanged(selection.first)
+                    : null,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
