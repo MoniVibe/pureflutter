@@ -35,6 +35,8 @@ class MultiplayerTransportClient {
     required String displayName,
     String? pieceSkinId,
     int? cooldownSeconds,
+    String? gameType,
+    Map<String, dynamic>? metadata,
   }) async {
     final normalizedName = displayName.trim();
     if (normalizedName.isEmpty) {
@@ -50,6 +52,15 @@ class MultiplayerTransportClient {
     }
     if (cooldownSeconds != null) {
       payload['cooldownSeconds'] = cooldownSeconds;
+    }
+    final normalizedGameType = MultiplayerClientUtils.sanitizeIdentifier(
+      gameType,
+    );
+    if (normalizedGameType != null) {
+      payload['gameType'] = normalizedGameType;
+    }
+    if (metadata != null && metadata.isNotEmpty) {
+      payload['metadata'] = metadata;
     }
 
     final response = await _httpClient
