@@ -34,7 +34,9 @@ class GameChatPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Card(
+      clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -58,13 +60,13 @@ class GameChatPanel extends StatelessWidget {
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0x143FC1A7),
+                    color: colorScheme.tertiaryContainer.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(999),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Docked',
                     style: TextStyle(
-                      color: Color(0xFF166555),
+                      color: colorScheme.onTertiaryContainer,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),
@@ -76,16 +78,27 @@ class GameChatPanel extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 helperText!,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF57534E)),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurface),
               ),
             ],
             const SizedBox(height: 10),
             Expanded(
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF7F7F6),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: <Color>[
+                      colorScheme.surface.withValues(alpha: 0.86),
+                      colorScheme.surface.withValues(alpha: 0.7),
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0x1A000000)),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.56),
+                  ),
                 ),
                 child: entries.isEmpty
                     ? const Center(
@@ -136,6 +149,7 @@ class _ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Align(
       alignment: entry.isMine ? Alignment.centerRight : Alignment.centerLeft,
       child: Padding(
@@ -143,10 +157,12 @@ class _ChatBubble extends StatelessWidget {
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: entry.isMine
-                ? const Color(0xFFDBFFF6)
-                : const Color(0xFFFFFFFF),
+                ? colorScheme.primaryContainer.withValues(alpha: 0.72)
+                : colorScheme.surface.withValues(alpha: 0.86),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0x18000000)),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+            ),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),

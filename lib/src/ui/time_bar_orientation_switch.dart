@@ -23,25 +23,59 @@ class TimeBarOrientationSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SwitchListTile.adaptive(
-      contentPadding: EdgeInsets.zero,
-      dense: true,
-      title: Text(title),
-      subtitle: Text(
-        orientation == TimeBarOrientation.vertical
-            ? verticalHint
-            : horizontalHint,
+    final isVertical = orientation == TimeBarOrientation.vertical;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.56),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(
+            context,
+          ).colorScheme.outlineVariant.withValues(alpha: 0.66),
+        ),
       ),
-      value: orientation == TimeBarOrientation.vertical,
-      onChanged: enabled
-          ? (selected) {
-              onChanged(
-                selected
-                    ? TimeBarOrientation.vertical
-                    : TimeBarOrientation.horizontal,
-              );
-            }
-          : null,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              title,
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 6),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SegmentedButton<TimeBarOrientation>(
+                showSelectedIcon: false,
+                segments: const <ButtonSegment<TimeBarOrientation>>[
+                  ButtonSegment<TimeBarOrientation>(
+                    value: TimeBarOrientation.horizontal,
+                    icon: Icon(Icons.swap_vert_rounded, size: 16),
+                    label: Text('Horizontal'),
+                  ),
+                  ButtonSegment<TimeBarOrientation>(
+                    value: TimeBarOrientation.vertical,
+                    icon: Icon(Icons.swap_horiz_rounded, size: 16),
+                    label: Text('Vertical'),
+                  ),
+                ],
+                selected: <TimeBarOrientation>{orientation},
+                onSelectionChanged: enabled
+                    ? (selection) => onChanged(selection.first)
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              isVertical ? verticalHint : horizontalHint,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

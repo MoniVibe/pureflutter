@@ -13,12 +13,28 @@ class CompactModeSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return SegmentedButton<bool>(
       showSelectedIcon: false,
-      style: const ButtonStyle(
+      style: ButtonStyle(
         visualDensity: VisualDensity.compact,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        padding: WidgetStatePropertyAll(
+        side: WidgetStatePropertyAll(
+          BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.7)),
+        ),
+        backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+          if (states.contains(WidgetState.selected)) {
+            return colorScheme.primary.withValues(alpha: 0.2);
+          }
+          return colorScheme.surface.withValues(alpha: 0.66);
+        }),
+        foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+          if (states.contains(WidgetState.selected)) {
+            return colorScheme.onSurface;
+          }
+          return colorScheme.onSurfaceVariant;
+        }),
+        padding: const WidgetStatePropertyAll(
           EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         ),
       ),
