@@ -495,11 +495,13 @@ $onlineSeeds = New-SeedList -Count $onlineSessions -ExplicitSeeds $Seeds
 
 $script:failures = @()
 $script:blocked = @()
+$script:passes = @()
 
 function Invoke-Step {
   param([scriptblock]$Body, [string]$Name)
   try {
     & $Body
+    $script:passes += $Name
     Write-Host "[PASS] $Name"
   } catch {
     $message = $_.Exception.Message
@@ -568,6 +570,41 @@ if ($script:blocked.Count -gt 0) {
   }
 }
 Set-Content -Path $summaryPath -Value $summaryLines -Encoding UTF8
+
+$stepSummaryPath = $env:GITHUB_STEP_SUMMARY
+if (-not [string]::IsNullOrWhiteSpace($stepSummaryPath)) {
+  $stepSummaryLines = @(
+    '## Bughunt Matrix',
+    '',
+    "- runId: $script:RunId",
+    "- scenario: $Scenario",
+    "- profile: $Profile",
+    "- backendUrl: $BackendUrl",
+    "- artifactRoot: $script:artifactRoot"
+  )
+  if ($script:passes.Count -gt 0) {
+    $stepSummaryLines += ''
+    $stepSummaryLines += '### Passed'
+    foreach ($pass in $script:passes) {
+      $stepSummaryLines += "- $pass"
+    }
+  }
+  if ($script:blocked.Count -gt 0) {
+    $stepSummaryLines += ''
+    $stepSummaryLines += '### Blocked'
+    foreach ($blocked in $script:blocked) {
+      $stepSummaryLines += "- $blocked"
+    }
+  }
+  if ($script:failures.Count -gt 0) {
+    $stepSummaryLines += ''
+    $stepSummaryLines += '### Failed'
+    foreach ($failure in $script:failures) {
+      $stepSummaryLines += "- $failure"
+    }
+  }
+  Add-Content -Path $stepSummaryPath -Value $stepSummaryLines
+}
 
 Write-Host "Run summary: $summaryPath"
 if ($script:failures.Count -gt 0) {
