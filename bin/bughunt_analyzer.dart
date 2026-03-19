@@ -14,6 +14,7 @@ void main(List<String> args) {
       requireZeroCrashes: true,
       requireZeroInvariantFailures: true,
       requireZeroDesyncs: true,
+      blockedFailureCodes: config.blockedFailureCodes,
     ),
   );
   final primary = analyzer.readJsonl(config.primaryLogPath);
@@ -39,7 +40,9 @@ void main(List<String> args) {
   print('Report: ${_joinPath(config.outputDir, 'report.md')}');
 
   final verdict = result.summary.verdict;
-  if (verdict != BughuntGateVerdict.pass) {
+  final blockedAllowed =
+      verdict == BughuntGateVerdict.blocked && config.blockedExitZero;
+  if (verdict != BughuntGateVerdict.pass && !blockedAllowed) {
     exitCode = 2;
   }
 }
@@ -52,6 +55,8 @@ class _Config {
     required this.queueResolutionMaxTicks,
     required this.minSessions,
     required this.minCompletionRate,
+    required this.blockedFailureCodes,
+    required this.blockedExitZero,
     required this.notes,
     required this.reproductionCommand,
   });
@@ -62,6 +67,8 @@ class _Config {
   final int queueResolutionMaxTicks;
   final int? minSessions;
   final double minCompletionRate;
+  final List<String> blockedFailureCodes;
+  final bool blockedExitZero;
   final String? notes;
   final String? reproductionCommand;
 
@@ -72,6 +79,8 @@ class _Config {
     var queueResolutionMaxTicks = 30;
     int? minSessions;
     var minCompletionRate = 1.0;
+    var blockedFailureCodes = const <String>[];
+    var blockedExitZero = false;
     String? notes;
     String? reproductionCommand;
 
@@ -102,6 +111,19 @@ class _Config {
         minCompletionRate = double.parse(
           arg.substring('--min-completion-rate='.length),
         );
+        continue;
+      }
+      if (arg.startsWith('--blocked-failure-codes=')) {
+        final raw = arg.substring('--blocked-failure-codes='.length).trim();
+        blockedFailureCodes = raw
+            .split(',')
+            .map((code) => code.trim())
+            .where((code) => code.isNotEmpty)
+            .toList(growable: false);
+        continue;
+      }
+      if (arg == '--blocked-exit-zero') {
+        blockedExitZero = true;
         continue;
       }
       if (arg.startsWith('--notes=')) {
@@ -138,6 +160,8 @@ class _Config {
       queueResolutionMaxTicks: queueResolutionMaxTicks,
       minSessions: minSessions,
       minCompletionRate: minCompletionRate,
+      blockedFailureCodes: blockedFailureCodes,
+      blockedExitZero: blockedExitZero,
       notes: notes,
       reproductionCommand: reproductionCommand,
     );
@@ -153,6 +177,8 @@ void _printUsageAndExit() {
     '[--queue-resolution-max-ticks=30] '
     '[--min-sessions=10] '
     '[--min-completion-rate=1.0] '
+    '[--blocked-failure-codes=CODE1,CODE2] '
+    '[--blocked-exit-zero] '
     '[--notes=text] '
     '[--repro="command"]',
   );

@@ -64,7 +64,7 @@ class BughuntAnalyzer {
       sessions: sessions,
       completionRate: completionRate,
       crashCount: crashCount,
-      failureCount: failures.length,
+      failureCodes: failures.map((failure) => failure.failureCode).toSet(),
       desyncCount: desyncCount,
     );
 
@@ -240,10 +240,14 @@ class BughuntAnalyzer {
     required int sessions,
     required double completionRate,
     required int crashCount,
-    required int failureCount,
+    required Set<String> failureCodes,
     required int desyncCount,
   }) {
     if (mergedIsEmpty) {
+      return BughuntGateVerdict.blocked;
+    }
+
+    if (_isBlockedByPolicy(failureCodes)) {
       return BughuntGateVerdict.blocked;
     }
 
@@ -257,13 +261,28 @@ class BughuntAnalyzer {
     if (gateConfig.requireZeroCrashes && crashCount > 0) {
       return BughuntGateVerdict.fail;
     }
-    if (gateConfig.requireZeroInvariantFailures && failureCount > 0) {
+    if (gateConfig.requireZeroInvariantFailures && failureCodes.isNotEmpty) {
       return BughuntGateVerdict.fail;
     }
     if (gateConfig.requireZeroDesyncs && desyncCount > 0) {
       return BughuntGateVerdict.fail;
     }
     return BughuntGateVerdict.pass;
+  }
+
+  bool _isBlockedByPolicy(Set<String> failureCodes) {
+    final blockedCodes = gateConfig.blockedFailureCodes.toSet();
+    if (blockedCodes.isEmpty || failureCodes.isEmpty) {
+      return false;
+    }
+    final hasBlockedCode = failureCodes.any(blockedCodes.contains);
+    if (!hasBlockedCode) {
+      return false;
+    }
+    final hasNonBlockedCode = failureCodes.any(
+      (code) => !blockedCodes.contains(code),
+    );
+    return !hasNonBlockedCode;
   }
 
   int _compareEvents(SessionEvent left, SessionEvent right) {

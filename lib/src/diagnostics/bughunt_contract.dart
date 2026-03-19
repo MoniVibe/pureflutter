@@ -332,6 +332,7 @@ class BughuntGateConfig {
     this.requireZeroCrashes = true,
     this.requireZeroInvariantFailures = true,
     this.requireZeroDesyncs = true,
+    this.blockedFailureCodes = const <String>[],
   });
 
   final int? minSessions;
@@ -339,6 +340,7 @@ class BughuntGateConfig {
   final bool requireZeroCrashes;
   final bool requireZeroInvariantFailures;
   final bool requireZeroDesyncs;
+  final List<String> blockedFailureCodes;
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
@@ -347,6 +349,7 @@ class BughuntGateConfig {
       'requireZeroCrashes': requireZeroCrashes,
       'requireZeroInvariantFailures': requireZeroInvariantFailures,
       'requireZeroDesyncs': requireZeroDesyncs,
+      'blockedFailureCodes': blockedFailureCodes,
     };
   }
 }

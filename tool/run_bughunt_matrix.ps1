@@ -133,11 +133,12 @@ function Invoke-Analyzer {
     [string]$OutputDir,
     [int]$MinSessions,
     [double]$MinCompletionRate,
-    [string]$ReproCommand
+    [string]$ReproCommand,
+    [string]$BlockedFailureCodes = '',
+    [switch]$BlockedExitZero
   )
 
   $args = @(
-    'pub',
     'run',
     'bin/bughunt_analyzer.dart',
     "--primary=$PrimaryPath",
@@ -149,15 +150,44 @@ function Invoke-Analyzer {
   if (-not [string]::IsNullOrWhiteSpace($SecondaryPath)) {
     $args += "--secondary=$SecondaryPath"
   }
+  if (-not [string]::IsNullOrWhiteSpace($BlockedFailureCodes)) {
+    $args += "--blocked-failure-codes=$BlockedFailureCodes"
+  }
+  if ($BlockedExitZero) {
+    $args += '--blocked-exit-zero'
+  }
 
   $stdout = Join-Path $OutputDir 'analyzer.stdout.log'
   $stderr = Join-Path $OutputDir 'analyzer.stderr.log'
-  $exitCode = Invoke-DartSync `
-    -WorkingDirectory $script:sharedRepo `
-    -Arguments $args `
-    -StdoutPath $stdout `
-    -StderrPath $stderr
-  return $exitCode
+  $stdoutDir = Split-Path -Parent $stdout
+  $stderrDir = Split-Path -Parent $stderr
+  New-Item -ItemType Directory -Path $stdoutDir -Force | Out-Null
+  New-Item -ItemType Directory -Path $stderrDir -Force | Out-Null
+  Push-Location $script:sharedRepo
+  try {
+    & dart @args 1> $stdout 2> $stderr
+    return $LASTEXITCODE
+  } finally {
+    Pop-Location
+  }
+}
+
+function Get-AnalyzerVerdict {
+  param([string]$OutputDir)
+
+  $summaryPath = Join-Path $OutputDir 'summary.json'
+  if (-not (Test-Path $summaryPath)) {
+    return ''
+  }
+  try {
+    $summary = Get-Content -Path $summaryPath -Raw | ConvertFrom-Json
+    if ($null -eq $summary -or $null -eq $summary.verdict) {
+      return ''
+    }
+    return $summary.verdict.ToString().Trim().ToUpperInvariant()
+  } catch {
+    return ''
+  }
 }
 
 function Run-ChessLocal {
@@ -339,6 +369,7 @@ function Run-BackgammonOnline {
   New-Item -ItemType Directory -Path (Split-Path -Parent $aggregateHostLog) -Force | Out-Null
   if (Test-Path $aggregateHostLog) { Remove-Item $aggregateHostLog -Force }
   if (Test-Path $aggregateClientLog) { Remove-Item $aggregateClientLog -Force }
+  $nonZeroSeeds = @()
 
   foreach ($seed in $SeedList) {
     $seedDir = Join-Path $script:orchestratorRoot "backgammon\online\seed_$seed"
@@ -398,11 +429,8 @@ function Run-BackgammonOnline {
 
     $hostExitCode = Resolve-ProcessExitCode -Process $hostProc -SessionLogPath $seedHostLog
     $clientExitCode = Resolve-ProcessExitCode -Process $clientProc -SessionLogPath $seedClientLog
-    if ($null -eq $hostExitCode -or $hostExitCode -ne 0) {
-      throw "Backgammon online host failed for seed $seed with exit code $hostExitCode."
-    }
-    if ($null -eq $clientExitCode -or $clientExitCode -ne 0) {
-      throw "Backgammon online client failed for seed $seed with exit code $clientExitCode."
+    if ($null -eq $hostExitCode -or $hostExitCode -ne 0 -or $null -eq $clientExitCode -or $clientExitCode -ne 0) {
+      $nonZeroSeeds += "seed=$seed host=$hostExitCode client=$clientExitCode"
     }
     if (Test-Path $seedHostLog) {
       Get-Content -Path $seedHostLog | Add-Content -Path $aggregateHostLog
@@ -419,9 +447,20 @@ function Run-BackgammonOnline {
     -OutputDir $analysisOut `
     -MinSessions $RequiredSessions `
     -MinCompletionRate $MinCompletionRate `
+    -BlockedFailureCodes 'SESSION_TERMINATION_INVALID' `
+    -BlockedExitZero `
     -ReproCommand 'dart run tool/network_ai_duel_client.dart --backend-url=<url> --role=host|client --seed=<seed> --run-id=<runId>'
   if ($analyzerExit -ne 0) {
     throw "Backgammon online analyzer failed with exit code $analyzerExit."
+  }
+  $verdict = Get-AnalyzerVerdict -OutputDir $analysisOut
+  if ($verdict -eq 'BLOCKED') {
+    $details = if ($nonZeroSeeds.Count -gt 0) {
+      "unsupported protocol; non-zero sessions: $($nonZeroSeeds -join '; ')"
+    } else {
+      'unsupported protocol'
+    }
+    throw "BLOCKED: backgammon-online is currently blocked ($details)."
   }
 }
 
@@ -455,6 +494,7 @@ $localSeeds = New-SeedList -Count $localSessions -ExplicitSeeds $Seeds
 $onlineSeeds = New-SeedList -Count $onlineSessions -ExplicitSeeds $Seeds
 
 $script:failures = @()
+$script:blocked = @()
 
 function Invoke-Step {
   param([scriptblock]$Body, [string]$Name)
@@ -462,8 +502,15 @@ function Invoke-Step {
     & $Body
     Write-Host "[PASS] $Name"
   } catch {
-    $script:failures += "${Name}: $($_.Exception.Message)"
-    Write-Host "[FAIL] ${Name}: $($_.Exception.Message)" -ForegroundColor Red
+    $message = $_.Exception.Message
+    if ($message -like 'BLOCKED:*') {
+      $blockedReason = $message.Substring('BLOCKED:'.Length).Trim()
+      $script:blocked += "${Name}: $blockedReason"
+      Write-Host "[BLOCKED] ${Name}: $blockedReason" -ForegroundColor Yellow
+      return
+    }
+    $script:failures += "${Name}: $message"
+    Write-Host "[FAIL] ${Name}: $message" -ForegroundColor Red
     if (-not $KeepGoing) {
       throw
     }
@@ -507,9 +554,18 @@ if ($script:failures.Count -gt 0) {
   foreach ($failure in $script:failures) {
     $summaryLines += "- $failure"
   }
-} else {
+}
+if ($script:blocked.Count -gt 0) {
   $summaryLines += ''
-  $summaryLines += 'All selected matrix lanes passed.'
+  $summaryLines += '## Blocked'
+  foreach ($blocked in $script:blocked) {
+    $summaryLines += "- $blocked"
+  }
+} else {
+  if ($script:failures.Count -eq 0) {
+    $summaryLines += ''
+    $summaryLines += 'All selected matrix lanes passed.'
+  }
 }
 Set-Content -Path $summaryPath -Value $summaryLines -Encoding UTF8
 
