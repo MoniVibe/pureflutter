@@ -15,11 +15,23 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 function Get-FlutterExe {
-  $preferred = 'C:\dev\flutter\bin\flutter.bat'
-  if (Test-Path $preferred) {
-    return $preferred
+  $explicit = $env:BULLETHOLE_FLUTTER_EXE
+  if (-not [string]::IsNullOrWhiteSpace($explicit) -and (Test-Path $explicit)) {
+    return $explicit
   }
-  return 'flutter'
+
+  $fromPath = Get-Command flutter -ErrorAction SilentlyContinue
+  if ($null -ne $fromPath -and -not [string]::IsNullOrWhiteSpace($fromPath.Source)) {
+    return $fromPath.Source
+  }
+
+  # Backward-compatible fallback for existing local setup.
+  $legacy = 'C:\dev\flutter\bin\flutter.bat'
+  if (Test-Path $legacy) {
+    return $legacy
+  }
+
+  throw 'Flutter executable not found. Put `flutter` on PATH or set BULLETHOLE_FLUTTER_EXE.'
 }
 
 function New-RunId {
