@@ -20,19 +20,19 @@ class CompactModeSwitch extends StatelessWidget {
         visualDensity: VisualDensity.compact,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         side: WidgetStatePropertyAll(
-          BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.7)),
+          BorderSide(color: Colors.white.withValues(alpha: 0.14)),
         ),
         backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
           if (states.contains(WidgetState.selected)) {
-            return colorScheme.primary.withValues(alpha: 0.2);
+            return colorScheme.primary.withValues(alpha: 0.24);
           }
-          return colorScheme.surface.withValues(alpha: 0.66);
+          return Colors.white.withValues(alpha: 0.03);
         }),
         foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
           if (states.contains(WidgetState.selected)) {
             return colorScheme.onSurface;
           }
-          return colorScheme.onSurfaceVariant;
+          return colorScheme.onSurface.withValues(alpha: 0.72);
         }),
         padding: const WidgetStatePropertyAll(
           EdgeInsets.symmetric(horizontal: 10, vertical: 6),

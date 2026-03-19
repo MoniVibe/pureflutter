@@ -26,14 +26,14 @@ class GameBackdrop extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: <Color>[
-                  Color(0xFF0D1B2A),
-                  Color(0xFF1B263B),
-                  Color(0xFF202E44),
+                  Color(0xFF05070B),
+                  Color(0xFF0E1118),
+                  Color(0xFF121621),
                 ],
               ),
             ),
             child: backgroundAssetPath == null
-                ? ColoredBox(color: fallbackColor.withValues(alpha: 0.12))
+                ? ColoredBox(color: fallbackColor.withValues(alpha: 0.08))
                 : Image.asset(
                     backgroundAssetPath!,
                     fit: BoxFit.cover,
@@ -43,23 +43,38 @@ class GameBackdrop extends StatelessWidget {
                   ),
           ),
         ),
-        const _AmbientBlurBlob(
-          top: -140,
-          left: -120,
-          size: 320,
-          color: Color(0xAA2B7FFF),
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.center,
+                radius: 0.9,
+                colors: <Color>[
+                  Colors.white.withValues(alpha: 0.08),
+                  Colors.transparent,
+                ],
+                stops: const <double>[0, 1],
+              ),
+            ),
+          ),
         ),
         const _AmbientBlurBlob(
-          top: -60,
+          top: -150,
+          left: -130,
+          size: 330,
+          color: Color(0x88FF5A5A),
+        ),
+        const _AmbientBlurBlob(
+          top: -70,
           right: -80,
           size: 260,
-          color: Color(0xAA3CD3A6),
+          color: Color(0x884F79FF),
         ),
         const _AmbientBlurBlob(
-          bottom: -170,
-          right: -120,
-          size: 340,
-          color: Color(0xAAEFB54F),
+          bottom: -180,
+          right: -130,
+          size: 350,
+          color: Color(0x88986BFF),
         ),
         Positioned.fill(
           child: DecoratedBox(
@@ -68,9 +83,9 @@ class GameBackdrop extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: <Color>[
-                  Colors.white.withValues(alpha: 0.12),
-                  Colors.white.withValues(alpha: 0.03),
-                  Colors.black.withValues(alpha: 0.35),
+                  Colors.white.withValues(alpha: 0.1),
+                  Colors.white.withValues(alpha: 0.02),
+                  Colors.black.withValues(alpha: 0.44),
                 ],
                 stops: const <double>[0, 0.45, 1],
               ),

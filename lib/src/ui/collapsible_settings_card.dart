@@ -34,8 +34,8 @@ class CollapsibleSettingsCard extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: <Color>[
-                  colorScheme.primary.withValues(alpha: 0.18),
-                  colorScheme.secondary.withValues(alpha: 0.14),
+                  colorScheme.primary.withValues(alpha: 0.15),
+                  colorScheme.secondary.withValues(alpha: 0.1),
                 ],
               ),
             ),
@@ -52,6 +52,7 @@ class CollapsibleSettingsCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.3,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -62,7 +63,10 @@ class CollapsibleSettingsCard extends StatelessWidget {
                     turns: isOpen ? 0.5 : 0,
                     duration: const Duration(milliseconds: 180),
                     curve: Curves.easeOutCubic,
-                    child: const Icon(Icons.expand_more_rounded),
+                    child: Icon(
+                      Icons.expand_more_rounded,
+                      color: colorScheme.onSurface.withValues(alpha: 0.92),
+                    ),
                   ),
                 ],
               ),
