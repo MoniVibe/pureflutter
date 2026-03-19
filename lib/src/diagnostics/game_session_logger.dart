@@ -53,48 +53,60 @@ class GameSessionLogger {
     required String sessionLabel,
     Map<String, Object?> context = const <String, Object?>{},
   }) {
-    final root = _resolveRootDirectory();
-    final modeDir = Directory(
-      _joinPath(root.path, <String>[
-        'debug',
-        'last_game',
-        _sanitize(gameId),
-        _sanitize(mode),
-      ]),
-    );
-    final sessionsDir = Directory(
-      _joinPath(modeDir.path, <String>['sessions']),
-    );
-    if (!sessionsDir.existsSync()) {
-      sessionsDir.createSync(recursive: true);
-    }
-
     final nowUtc = _utcNow();
     final timestamp = _compactTimestamp(nowUtc);
     _sessionId = '$timestamp-${pidString}-${_sanitize(sessionLabel)}';
-    _sessionFile = File(
-      _joinPath(sessionsDir.path, <String>['$_sessionId.jsonl']),
-    );
-    _latestFile = File(_joinPath(modeDir.path, <String>['latest.jsonl']));
-    _latestSummaryFile = File(
-      _joinPath(modeDir.path, <String>['latest_summary.json']),
-    );
-
-    if (_latestFile!.existsSync()) {
-      _latestFile!.deleteSync();
-    }
-    _latestFile!.createSync(recursive: true);
-
     _runId = _resolveRunId(nowUtc);
-    _bughuntFile = _resolveBughuntFile(root: root);
-    if (_bughuntFile != null && !_bughuntFile!.existsSync()) {
-      _bughuntFile!.createSync(recursive: true);
-    }
-
     _logicalTick = 0;
     _turnIndex = 0;
     _actionIndexOrPlyIndex = 0;
     _runtimeRoomOrMatchId = roomIdOrMatchId;
+    _sessionFile = null;
+    _latestFile = null;
+    _latestSummaryFile = null;
+    _bughuntFile = null;
+
+    try {
+      final root = _resolveWritableRootDirectory();
+      final modeDir = Directory(
+        _joinPath(root.path, <String>[
+          'debug',
+          'last_game',
+          _sanitize(gameId),
+          _sanitize(mode),
+        ]),
+      );
+      final sessionsDir = Directory(
+        _joinPath(modeDir.path, <String>['sessions']),
+      );
+      if (!sessionsDir.existsSync()) {
+        sessionsDir.createSync(recursive: true);
+      }
+
+      _sessionFile = File(
+        _joinPath(sessionsDir.path, <String>['$_sessionId.jsonl']),
+      );
+      _latestFile = File(_joinPath(modeDir.path, <String>['latest.jsonl']));
+      _latestSummaryFile = File(
+        _joinPath(modeDir.path, <String>['latest_summary.json']),
+      );
+
+      if (_latestFile!.existsSync()) {
+        _latestFile!.deleteSync();
+      }
+      _latestFile!.createSync(recursive: true);
+
+      _bughuntFile = _resolveBughuntFile(root: root);
+      if (_bughuntFile != null && !_bughuntFile!.existsSync()) {
+        _bughuntFile!.createSync(recursive: true);
+      }
+    } catch (_) {
+      // Swallow path or permissions failures. Session logic should continue.
+      _sessionFile = null;
+      _latestFile = null;
+      _latestSummaryFile = null;
+      _bughuntFile = null;
+    }
 
     if (!_emittedAppStart) {
       _emittedAppStart = true;
@@ -392,12 +404,29 @@ class GameSessionLogger {
     return roomIdOrMatchId ?? '';
   }
 
-  Directory _resolveRootDirectory() {
+  Directory _resolveWritableRootDirectory() {
+    final candidates = <Directory>[];
     final override = Platform.environment['BULLETHOLE_LOG_ROOT'];
     if (override != null && override.trim().isNotEmpty) {
-      return Directory(override.trim());
+      candidates.add(Directory(override.trim()));
     }
+    candidates.add(_resolveProjectRootDirectory());
+    final executableDirectory = _resolveExecutableDirectory();
+    if (executableDirectory != null) {
+      candidates.add(executableDirectory);
+    }
+    candidates.add(Directory.systemTemp);
 
+    for (final candidate in candidates) {
+      final absolute = candidate.absolute;
+      if (_isDirectoryWritable(absolute)) {
+        return absolute;
+      }
+    }
+    return Directory.current.absolute;
+  }
+
+  Directory _resolveProjectRootDirectory() {
     var candidate = Directory.current.absolute;
     for (var i = 0; i < 12; i++) {
       final pubspec = File(_joinPath(candidate.path, <String>['pubspec.yaml']));
@@ -411,6 +440,45 @@ class GameSessionLogger {
       candidate = parent;
     }
     return Directory.current.absolute;
+  }
+
+  Directory? _resolveExecutableDirectory() {
+    try {
+      final resolved = Platform.resolvedExecutable;
+      if (resolved.trim().isEmpty) {
+        return null;
+      }
+      return File(resolved).parent.absolute;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool _isDirectoryWritable(Directory directory) {
+    final probeDir = Directory(
+      _joinPath(directory.path, <String>[
+        'artifacts',
+        'bughunt',
+        '.write_probe',
+      ]),
+    );
+    final probeFile = File(
+      _joinPath(probeDir.path, <String>[
+        'probe_${pidString}_${DateTime.now().millisecondsSinceEpoch}',
+      ]),
+    );
+    try {
+      if (!probeDir.existsSync()) {
+        probeDir.createSync(recursive: true);
+      }
+      probeFile.writeAsStringSync('ok', flush: true);
+      if (probeFile.existsSync()) {
+        probeFile.deleteSync();
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   String _mapLegacyEventType(String event) {
