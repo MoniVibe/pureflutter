@@ -60,13 +60,13 @@ class GameChatPanel extends StatelessWidget {
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: colorScheme.tertiaryContainer.withValues(alpha: 0.5),
+                    color: colorScheme.tertiary.withValues(alpha: 0.22),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     'Docked',
                     style: TextStyle(
-                      color: colorScheme.onTertiaryContainer,
+                      color: colorScheme.onSurface.withValues(alpha: 0.92),
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),
@@ -78,9 +78,9 @@ class GameChatPanel extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 helperText!,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurface),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurface.withValues(alpha: 0.74),
+                ),
               ),
             ],
             const SizedBox(height: 10),
@@ -91,20 +91,24 @@ class GameChatPanel extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: <Color>[
-                      colorScheme.surface.withValues(alpha: 0.86),
-                      colorScheme.surface.withValues(alpha: 0.7),
+                      colorScheme.surface.withValues(alpha: 0.8),
+                      colorScheme.surface.withValues(alpha: 0.62),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.56),
+                    color: Colors.white.withValues(alpha: 0.12),
                   ),
                 ),
                 child: entries.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
                           'No messages yet',
-                          style: TextStyle(color: Color(0xFF707070)),
+                          style: TextStyle(
+                            color: colorScheme.onSurface.withValues(
+                              alpha: 0.56,
+                            ),
+                          ),
                         ),
                       )
                     : ListView.builder(
@@ -150,6 +154,9 @@ class _ChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final onBubble = entry.isMine
+        ? colorScheme.onPrimary
+        : colorScheme.onSurface;
     return Align(
       alignment: entry.isMine ? Alignment.centerRight : Alignment.centerLeft,
       child: Padding(
@@ -157,12 +164,10 @@ class _ChatBubble extends StatelessWidget {
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: entry.isMine
-                ? colorScheme.primaryContainer.withValues(alpha: 0.72)
+                ? colorScheme.primary.withValues(alpha: 0.62)
                 : colorScheme.surface.withValues(alpha: 0.86),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -175,19 +180,16 @@ class _ChatBubble extends StatelessWidget {
                 children: <Widget>[
                   Text(
                     entry.author,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: Color(0xFF5D5D5D),
+                      color: onBubble.withValues(alpha: 0.72),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     entry.message,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF1D1D1D),
-                    ),
+                    style: TextStyle(fontSize: 13, color: onBubble),
                   ),
                 ],
               ),
