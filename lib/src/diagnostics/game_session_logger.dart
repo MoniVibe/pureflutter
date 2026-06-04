@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'bughunt_contract.dart';
+import 'game_session_log_persistence.dart';
 import 'state_snapshot_hash.dart';
 
 /// Writes structured per-session diagnostics for local and online game flows.
@@ -42,6 +43,7 @@ class GameSessionLogger {
   File? _latestFile;
   File? _latestSummaryFile;
   File? _bughuntFile;
+  final List<String> _currentSessionJsonLines = <String>[];
 
   int _logicalTick = 0;
   int _turnIndex = 0;
@@ -65,6 +67,7 @@ class GameSessionLogger {
     _latestFile = null;
     _latestSummaryFile = null;
     _bughuntFile = null;
+    _currentSessionJsonLines.clear();
 
     try {
       final root = _resolveWritableRootDirectory();
@@ -107,6 +110,17 @@ class GameSessionLogger {
       _latestSummaryFile = null;
       _bughuntFile = null;
     }
+
+    startPersistentGameLogSession(
+      applicationId: applicationId,
+      gameId: gameId,
+      mode: mode,
+      sessionId: _sessionId!,
+      sessionLabel: sessionLabel,
+      runId: _runId!,
+      createdAtIso: nowUtc.toIso8601String(),
+      context: context,
+    );
 
     if (!_emittedAppStart) {
       _emittedAppStart = true;
@@ -225,7 +239,7 @@ class GameSessionLogger {
     String reason = 'session_closed',
     Map<String, Object?> summary = const <String, Object?>{},
   }) {
-    if (_sessionId == null || _latestSummaryFile == null) {
+    if (_sessionId == null) {
       return;
     }
     logBughuntEvent(
@@ -243,6 +257,9 @@ class GameSessionLogger {
       'summary': summary,
       'runId': _runId,
     };
+    if (_latestSummaryFile == null) {
+      return;
+    }
     try {
       _latestSummaryFile!.writeAsStringSync(
         const JsonEncoder.withIndent('  ').convert(summaryPayload),
@@ -256,6 +273,28 @@ class GameSessionLogger {
   String get pidString {
     final raw = _safePid();
     return raw >= 0 ? raw.toString() : 'unknown';
+  }
+
+  bool get hasCurrentSessionLog => _currentSessionJsonLines.isNotEmpty;
+
+  String exportCurrentSessionJsonl() {
+    if (_currentSessionJsonLines.isEmpty) {
+      return '';
+    }
+    return '${_currentSessionJsonLines.join('\n')}\n';
+  }
+
+  String exportLatestSessionJsonl() {
+    final current = exportCurrentSessionJsonl();
+    if (current.trim().isNotEmpty) {
+      return current;
+    }
+    return readLatestPersistentGameLogJsonl(
+          applicationId: applicationId,
+          gameId: gameId,
+          mode: mode,
+        ) ??
+        '';
   }
 
   void _writeNoopEvent({
@@ -302,6 +341,15 @@ class GameSessionLogger {
     );
 
     final line = sessionEventToJsonLine(event);
+    _currentSessionJsonLines.add(line);
+    appendPersistentGameLogLine(
+      applicationId: applicationId,
+      gameId: gameId,
+      mode: mode,
+      sessionId: event.sessionId,
+      updatedAtIso: event.wallClockTs,
+      jsonLine: line,
+    );
     try {
       _sessionFile?.writeAsStringSync(line, mode: FileMode.append, flush: true);
       _latestFile?.writeAsStringSync(line, mode: FileMode.append, flush: true);

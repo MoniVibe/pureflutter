@@ -25,4 +25,27 @@ void main() {
     );
     expect(() => logger.closeSession(reason: 'test_complete'), returnsNormally);
   });
+
+  test('game session logger exports current session as jsonl', () {
+    final logger = GameSessionLogger(
+      applicationId: 'test-app',
+      gameId: 'test-game',
+      mode: 'local',
+    );
+
+    logger.beginSession(
+      sessionLabel: 'export',
+      context: const <String, Object?>{'source': 'test'},
+    );
+    logger.logEvent(
+      'move_applied',
+      data: const <String, Object?>{'from': 'a1', 'to': 'a2'},
+    );
+
+    final exported = logger.exportLatestSessionJsonl();
+    expect(exported.trim(), isNotEmpty);
+    expect(exported, contains('"eventType"'));
+    expect(exported, contains('move_applied'));
+    expect(exported.endsWith('\n'), isTrue);
+  });
 }

@@ -12,6 +12,7 @@ export 'src/skins/skin_models.dart';
 export 'src/ui/app_asset_icon.dart';
 export 'src/ui/collapsible_settings_card.dart';
 export 'src/ui/cooldown_meter.dart';
+export 'src/ui/debug_log_export_button.dart';
 export 'src/ui/game_backdrop.dart';
 export 'src/ui/game_chat_panel.dart';
 export 'src/ui/game_nav_rail.dart';
