@@ -22,6 +22,8 @@ class DebugLogExportButton extends StatelessWidget {
     if (iconOnly) {
       return IconButton(
         tooltip: label,
+        constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+        padding: EdgeInsets.zero,
         visualDensity: VisualDensity.compact,
         onPressed: () => _copyLog(context),
         icon: const Icon(Icons.copy_all_rounded, size: 20),
