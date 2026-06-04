@@ -254,7 +254,7 @@ class GameSessionLogger {
   }
 
   String get pidString {
-    final raw = pid;
+    final raw = _safePid();
     return raw >= 0 ? raw.toString() : 'unknown';
   }
 
@@ -327,11 +327,14 @@ class GameSessionLogger {
       seed: config.seed ?? seed,
       maxTurns: config.maxTurns ?? maxTurns,
       deviceInfo: <String, Object?>{
-        'os': Platform.operatingSystem,
-        'osVersion': Platform.operatingSystemVersion,
-        'dartVersion': Platform.version,
-        'pid': pid,
-        'executable': Platform.executable,
+        'os': _safePlatformValue(() => Platform.operatingSystem, 'unknown'),
+        'osVersion': _safePlatformValue(
+          () => Platform.operatingSystemVersion,
+          'unknown',
+        ),
+        'dartVersion': _safePlatformValue(() => Platform.version, 'unknown'),
+        'pid': _safePid(),
+        'executable': _safePlatformValue(() => Platform.executable, ''),
       },
     );
   }
@@ -345,15 +348,14 @@ class GameSessionLogger {
       runId: _runId ?? _resolveRunId(_utcNow()),
       mode: _resolveMode(mode),
       role: _resolveRole(mode),
-      seed: seed ?? _readInt(Platform.environment['BULLETHOLE_BUGHUNT_SEED']),
+      seed: seed ?? _readInt(_environmentValue('BULLETHOLE_BUGHUNT_SEED')),
       maxTurns:
           maxTurns ??
-          _readInt(Platform.environment['BULLETHOLE_BUGHUNT_MAX_TURNS']),
+          _readInt(_environmentValue('BULLETHOLE_BUGHUNT_MAX_TURNS')),
       roomIdOrMatchId:
-          roomIdOrMatchId ?? Platform.environment['BULLETHOLE_BUGHUNT_ROOM'],
+          roomIdOrMatchId ?? _environmentValue('BULLETHOLE_BUGHUNT_ROOM'),
       appVersionOrCommitSha:
-          appVersionOrCommitSha ??
-          Platform.environment['BULLETHOLE_COMMIT_SHA'],
+          appVersionOrCommitSha ?? _environmentValue('BULLETHOLE_COMMIT_SHA'),
     );
   }
 
@@ -362,7 +364,7 @@ class GameSessionLogger {
     if (explicit != null && explicit.trim().isNotEmpty) {
       return _sanitize(explicit);
     }
-    final env = Platform.environment['BULLETHOLE_BUGHUNT_RUN_ID'];
+    final env = _environmentValue('BULLETHOLE_BUGHUNT_RUN_ID');
     if (env != null && env.trim().isNotEmpty) {
       return _sanitize(env);
     }
@@ -406,7 +408,7 @@ class GameSessionLogger {
 
   Directory _resolveWritableRootDirectory() {
     final candidates = <Directory>[];
-    final override = Platform.environment['BULLETHOLE_LOG_ROOT'];
+    final override = _environmentValue('BULLETHOLE_LOG_ROOT');
     if (override != null && override.trim().isNotEmpty) {
       candidates.add(Directory(override.trim()));
     }
@@ -556,7 +558,7 @@ class GameSessionLogger {
   }
 
   BughuntRole _resolveRole(String rawMode) {
-    final env = Platform.environment['BULLETHOLE_BUGHUNT_ROLE'];
+    final env = _environmentValue('BULLETHOLE_BUGHUNT_ROLE');
     final parsed = parseBughuntRole(env);
     if (parsed != null) {
       return parsed;
@@ -608,7 +610,7 @@ class GameSessionLogger {
   }
 
   static String _joinPath(String root, List<String> parts) {
-    final separator = Platform.pathSeparator;
+    final separator = _safePathSeparator();
     final suffix = parts
         .map((part) => part.trim())
         .where((part) => part.isNotEmpty)
@@ -620,5 +622,37 @@ class GameSessionLogger {
       return '$root$suffix';
     }
     return '$root$separator$suffix';
+  }
+
+  static String? _environmentValue(String name) {
+    try {
+      return Platform.environment[name];
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static int _safePid() {
+    try {
+      return pid;
+    } catch (_) {
+      return -1;
+    }
+  }
+
+  static String _safePathSeparator() {
+    try {
+      return Platform.pathSeparator;
+    } catch (_) {
+      return '/';
+    }
+  }
+
+  static T _safePlatformValue<T>(T Function() read, T fallback) {
+    try {
+      return read();
+    } catch (_) {
+      return fallback;
+    }
   }
 }
