@@ -278,9 +278,13 @@ class _CooldownMeterState extends State<CooldownMeter>
       padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(
         children: [
-          Text(
-            widget.label,
-            style: _labelStyle(fontSize: 13, letterSpacing: 0.25),
+          Flexible(
+            child: Text(
+              widget.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: _labelStyle(fontSize: 13, letterSpacing: 0.25),
+            ),
           ),
           if (widget.isPlayerSide) ...[
             const SizedBox(width: 5),
@@ -298,7 +302,15 @@ class _CooldownMeterState extends State<CooldownMeter>
             ),
           ],
           const Spacer(),
-          Text(widget.timeLabel, style: _timeStyle(fontSize: 13)),
+          Flexible(
+            child: Text(
+              widget.timeLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: _timeStyle(fontSize: 13),
+            ),
+          ),
         ],
       ),
     );
