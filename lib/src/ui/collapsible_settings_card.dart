@@ -74,7 +74,12 @@ class CollapsibleSettingsCard extends StatelessWidget {
             ),
           ),
           AnimatedCrossFade(
-            firstChild: const SizedBox.shrink(),
+            // Keep the collapsed child full-width so AnimatedCrossFade's
+            // Stack does not collapse horizontally while the settings child
+            // is being laid out offstage. Without this width anchor, form
+            // fields briefly receive a zero-width constraint and Flutter
+            // reports a RenderFlex overflow from their InputDecorator.
+            firstChild: const SizedBox(width: double.infinity, height: 0),
             secondChild: Padding(padding: contentPadding, child: child),
             crossFadeState: isOpen
                 ? CrossFadeState.showSecond
