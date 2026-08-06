@@ -301,6 +301,18 @@ class _CooldownMeterState extends State<CooldownMeter>
               ],
             ),
           ],
+          if (widget.diceFaces.isNotEmpty) ...[
+            const SizedBox(width: 10),
+            for (final face in widget.diceFaces.take(4))
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: _MeterDiceFace(
+                  face: face,
+                  size: 26,
+                  assetPath: widget.diceFaceAssetBuilder?.call(face),
+                ),
+              ),
+          ],
           const Spacer(),
           Flexible(
             child: Text(
@@ -318,7 +330,7 @@ class _CooldownMeterState extends State<CooldownMeter>
 
   Widget _buildVerticalOverlay() {
     final hasDice = widget.diceFaces.isNotEmpty;
-    final dieSize = widget.diceFaces.length <= 2 ? 19.0 : 15.0;
+    final dieSize = widget.diceFaces.length <= 2 ? 24.0 : 18.0;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
@@ -455,47 +467,80 @@ class _MeterDiceFace extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (assetPath == null) {
-      return _fallbackFace();
-    }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(4),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.24),
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
-        ),
-        child: Image.asset(
-          assetPath!,
-          width: size,
-          height: size,
-          fit: BoxFit.contain,
-          filterQuality: FilterQuality.medium,
-          errorBuilder: (context, error, stackTrace) => _fallbackFace(),
-        ),
-      ),
-    );
-  }
-
-  Widget _fallbackFace() {
+    // Draw a crisp physical die (light face, dark pips) so it reads clearly on
+    // any background. assetPath is accepted for API compatibility but unused.
     return Container(
       width: size,
       height: size,
-      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        '$face',
-        style: TextStyle(
-          fontWeight: FontWeight.w800,
-          color: const Color(0xFF212121),
-          fontSize: size * 0.56,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[Color(0xFFFDFDFD), Color(0xFFE6E6EA)],
         ),
+        borderRadius: BorderRadius.circular(size * 0.22),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.3)),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
+      child: CustomPaint(painter: _DicePipPainter(face)),
     );
   }
+}
+
+class _DicePipPainter extends CustomPainter {
+  _DicePipPainter(this.face);
+
+  final int face;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = const Color(0xFF1A1A1E);
+    final r = size.width * 0.1;
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final lx = size.width * 0.28;
+    final rx = size.width * 0.72;
+    final ty = size.height * 0.28;
+    final by = size.height * 0.72;
+    void dot(double x, double y) => canvas.drawCircle(Offset(x, y), r, paint);
+    switch (face) {
+      case 1:
+        dot(cx, cy);
+      case 2:
+        dot(lx, ty);
+        dot(rx, by);
+      case 3:
+        dot(lx, ty);
+        dot(cx, cy);
+        dot(rx, by);
+      case 4:
+        dot(lx, ty);
+        dot(rx, ty);
+        dot(lx, by);
+        dot(rx, by);
+      case 5:
+        dot(lx, ty);
+        dot(rx, ty);
+        dot(cx, cy);
+        dot(lx, by);
+        dot(rx, by);
+      case 6:
+        dot(lx, ty);
+        dot(rx, ty);
+        dot(lx, cy);
+        dot(rx, cy);
+        dot(lx, by);
+        dot(rx, by);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DicePipPainter oldDelegate) =>
+      oldDelegate.face != face;
 }
