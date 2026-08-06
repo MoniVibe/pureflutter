@@ -8,5 +8,4 @@
 /// On desktop the real impl compiles but every native call is caught and
 /// swallowed, so it behaves like the stub at runtime. Ads only truly run on
 /// Android/iOS.
-export 'monetization_stub.dart'
-    if (dart.library.io) 'monetization_io.dart';
+export 'monetization_stub.dart' if (dart.library.io) 'monetization_io.dart';

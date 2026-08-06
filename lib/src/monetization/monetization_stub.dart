@@ -50,3 +50,19 @@ class RewardedAdService {
 
   void dispose() {}
 }
+
+/// Interstitial-ad wrapper. No-op here: proceed immediately without an ad.
+class InterstitialAdService {
+  InterstitialAdService();
+
+  bool get isReady => false;
+
+  Future<void> load() async {}
+
+  Future<bool> showThen(VoidCallback onDone) async {
+    onDone();
+    return false;
+  }
+
+  void dispose() {}
+}

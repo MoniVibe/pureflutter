@@ -232,3 +232,115 @@ class RewardedAdService {
     _ad = null;
   }
 }
+
+/// Thin, defensive wrapper around a single interstitial-ad slot.
+///
+/// Keeps one ad warm and shows it at a natural break (e.g. game over -> replay /
+/// search match). [showThen] shows the ad if one is ready and always invokes
+/// [onDone] afterwards — on dismiss, on show-failure, or immediately when no ad
+/// is loaded — so the caller's transition never stalls waiting on an ad.
+class InterstitialAdService {
+  InterstitialAdService();
+
+  InterstitialAd? _ad;
+  bool _isLoading = false;
+  int _retryAttempt = 0;
+  bool _disposed = false;
+
+  static const int _maxRetryAttempts = 5;
+
+  bool get isReady => _ad != null;
+
+  /// Preload an interstitial. Safe to call repeatedly; no-ops while one is
+  /// already loaded or loading. Requires [AdsBootstrap.initialize] first.
+  Future<void> load() async {
+    if (_disposed || _ad != null || _isLoading) return;
+    _isLoading = true;
+    try {
+      await InterstitialAd.load(
+        adUnitId: AdConfig.interstitialUnitId,
+        request: const AdRequest(),
+        adLoadCallback: InterstitialAdLoadCallback(
+          onAdLoaded: (ad) {
+            if (_disposed) {
+              ad.dispose();
+              return;
+            }
+            _ad = ad;
+            _isLoading = false;
+            _retryAttempt = 0;
+          },
+          onAdFailedToLoad: (error) {
+            _ad = null;
+            _isLoading = false;
+            if (kDebugMode) {
+              debugPrint('[InterstitialAdService] load failed: $error');
+            }
+            _scheduleRetry();
+          },
+        ),
+      );
+    } catch (e) {
+      _isLoading = false;
+      if (kDebugMode) debugPrint('[InterstitialAdService] load threw: $e');
+      _scheduleRetry();
+    }
+  }
+
+  void _scheduleRetry() {
+    if (_disposed || _retryAttempt >= _maxRetryAttempts) return;
+    _retryAttempt++;
+    final delaySeconds = 1 << _retryAttempt; // 2, 4, 8, 16, 32
+    Timer(Duration(seconds: delaySeconds), () {
+      if (!_disposed) load();
+    });
+  }
+
+  /// Show the interstitial if one is ready, then run [onDone]. [onDone] runs
+  /// exactly once regardless of outcome (ad dismissed, failed to show, or none
+  /// loaded), so the caller can always proceed with its transition. Returns
+  /// true if an ad was actually shown.
+  Future<bool> showThen(VoidCallback onDone) async {
+    final ad = _ad;
+    if (ad == null) {
+      onDone();
+      load(); // Opportunistically warm one for next time.
+      return false;
+    }
+    _ad = null; // Consumed.
+    var proceeded = false;
+    void proceedOnce() {
+      if (proceeded) return;
+      proceeded = true;
+      onDone();
+    }
+
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        load();
+        proceedOnce();
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        ad.dispose();
+        load();
+        proceedOnce();
+      },
+    );
+    try {
+      await ad.show();
+      return true;
+    } catch (e) {
+      if (kDebugMode) debugPrint('[InterstitialAdService] show threw: $e');
+      load();
+      proceedOnce();
+      return false;
+    }
+  }
+
+  void dispose() {
+    _disposed = true;
+    _ad?.dispose();
+    _ad = null;
+  }
+}

@@ -37,8 +37,9 @@ class AdConfig {
   /// The single production/test seam. Defaults to safe TEST ads. Can be forced
   /// on at build time with `--dart-define=bullethole.ads.prod=true` so the same
   /// binary source can produce a store build without editing this file.
-  static const bool useProductionAds =
-      bool.fromEnvironment('bullethole.ads.prod');
+  static const bool useProductionAds = bool.fromEnvironment(
+    'bullethole.ads.prod',
+  );
 
   // --- Google's official sample/test IDs (safe, never ban an account) ---
   // Android: https://developers.google.com/admob/android/test-ads
@@ -50,6 +51,10 @@ class AdConfig {
       'ca-app-pub-3940256099942544/5224354917';
   static const String _testIosRewarded =
       'ca-app-pub-3940256099942544/1712485313';
+  static const String _testAndroidInterstitial =
+      'ca-app-pub-3940256099942544/1033173712';
+  static const String _testIosInterstitial =
+      'ca-app-pub-3940256099942544/4411468910';
 
   // --- PRODUCTION placeholders — REPLACE with director-provided IDs. ---
   // Leaving these as placeholders is safe: [useProductionAds] defaults to false
@@ -60,6 +65,10 @@ class AdConfig {
       'REPLACE_WITH_PROD_ANDROID_REWARDED_UNIT_ID';
   static const String _prodIosRewarded =
       'REPLACE_WITH_PROD_IOS_REWARDED_UNIT_ID';
+  static const String _prodAndroidInterstitial =
+      'REPLACE_WITH_PROD_ANDROID_INTERSTITIAL_UNIT_ID';
+  static const String _prodIosInterstitial =
+      'REPLACE_WITH_PROD_IOS_INTERSTITIAL_UNIT_ID';
 
   /// True on iOS at runtime. Uses [defaultTargetPlatform] (not `dart:io`) so the
   /// file stays compilable for web/desktop targets.
@@ -82,6 +91,15 @@ class AdConfig {
       return _isIos ? _prodIosRewarded : _prodAndroidRewarded;
     }
     return _isIos ? _testIosRewarded : _testAndroidRewarded;
+  }
+
+  /// Interstitial ad-unit ID for the current platform. Shown full-screen at
+  /// natural breaks (e.g. game over -> replay / search match).
+  static String get interstitialUnitId {
+    if (useProductionAds) {
+      return _isIos ? _prodIosInterstitial : _prodAndroidInterstitial;
+    }
+    return _isIos ? _testIosInterstitial : _testAndroidInterstitial;
   }
 
   /// True while running on Google's test inventory (i.e. not yet live).
