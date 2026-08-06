@@ -8,6 +8,11 @@ export 'src/multiplayer/multiplayer_client_utils.dart';
 export 'src/multiplayer/multiplayer_models.dart';
 export 'src/multiplayer/relay_protocol.dart';
 export 'src/multiplayer/multiplayer_transport_client.dart';
+// Release / monetization kit (ads, consent, analytics). The monetization facade
+// resolves to a no-op stub on web where google_mobile_ads is unavailable.
+export 'src/analytics/analytics_service.dart';
+export 'src/monetization/ad_config.dart';
+export 'src/monetization/monetization.dart';
 export 'src/skins/skin_models.dart';
 export 'src/ui/app_asset_icon.dart';
 export 'src/ui/collapsible_settings_card.dart';

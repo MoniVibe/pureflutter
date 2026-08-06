@@ -13,6 +13,9 @@ dependencies:
   web_socket_channel: ^3.0.3
   crypto: ^3.0.6
   web: ^1.1.1
+  # Release / monetization kit. On web this is only reached through the
+  # conditional-import stub, so it never breaks `flutter build web`.
+  google_mobile_ads: ^5.3.1
 
 dev_dependencies:
   flutter_test:
