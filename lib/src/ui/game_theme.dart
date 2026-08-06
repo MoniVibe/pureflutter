@@ -54,6 +54,13 @@ ThemeData buildBulletholeGameTheme({required BulletholeThemePalette palette}) {
         ),
       );
 
+  // Legible label color for the accent fill regardless of accent lightness
+  // (dark ink on a gold/amber accent, white on a deep red/blue).
+  final onAccent =
+      ThemeData.estimateBrightnessForColor(palette.primary) == Brightness.dark
+      ? Colors.white
+      : const Color(0xFF17140C);
+
   return baseTheme.copyWith(
     textTheme: textTheme,
     cardTheme: CardThemeData(
@@ -76,7 +83,7 @@ ThemeData buildBulletholeGameTheme({required BulletholeThemePalette palette}) {
           }
           return colorScheme.primary;
         }),
-        foregroundColor: WidgetStatePropertyAll<Color>(colorScheme.onPrimary),
+        foregroundColor: WidgetStatePropertyAll<Color>(onAccent),
         surfaceTintColor: const WidgetStatePropertyAll<Color>(
           Colors.transparent,
         ),
