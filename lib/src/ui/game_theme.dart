@@ -65,21 +65,56 @@ ThemeData buildBulletholeGameTheme({required BulletholeThemePalette palette}) {
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-        textStyle: const TextStyle(fontWeight: FontWeight.w700),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      // Pill shape with a soft accent-colored glow that intensifies on press.
+      style: ButtonStyle(
+        backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return colorScheme.primary.withValues(alpha: 0.4);
+          }
+          if (states.contains(WidgetState.pressed)) {
+            return Color.lerp(colorScheme.primary, Colors.white, 0.12);
+          }
+          return colorScheme.primary;
+        }),
+        foregroundColor: WidgetStatePropertyAll<Color>(colorScheme.onPrimary),
+        surfaceTintColor: const WidgetStatePropertyAll<Color>(
+          Colors.transparent,
+        ),
+        overlayColor: WidgetStatePropertyAll<Color>(
+          Colors.white.withValues(alpha: 0.1),
+        ),
+        textStyle: const WidgetStatePropertyAll<TextStyle>(
+          TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
+        ),
+        padding: const WidgetStatePropertyAll<EdgeInsets>(
+          EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+        ),
+        shape: const WidgetStatePropertyAll<OutlinedBorder>(StadiumBorder()),
+        shadowColor: WidgetStatePropertyAll<Color>(colorScheme.primary),
+        elevation: WidgetStateProperty.resolveWith<double>((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return 0;
+          }
+          if (states.contains(WidgetState.pressed)) {
+            return 10;
+          }
+          if (states.contains(WidgetState.hovered)) {
+            return 7;
+          }
+          return 3;
+        }),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: colorScheme.onSurface,
-        side: BorderSide(color: colorScheme.primary.withValues(alpha: 0.4)),
-        textStyle: const TextStyle(fontWeight: FontWeight.w600),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        side: BorderSide(color: colorScheme.primary.withValues(alpha: 0.5)),
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.2,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        shape: const StadiumBorder(),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(

@@ -1,81 +1,86 @@
-import 'dart:ui';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-/// Shared visual shell for game screens.
+/// Shared visual shell for game screens: a sleek dark backdrop (deep charcoal
+/// to near-black) with faint noise and an optional single-accent glow. No
+/// imagery by default — pass [accentGlow] to tint it toward the app's accent.
 class GameBackdrop extends StatelessWidget {
   const GameBackdrop({
     required this.child,
     this.backgroundAssetPath,
+    this.accentGlow,
     this.fallbackColor = const Color(0xFF101A26),
     super.key,
   });
 
   final Widget child;
+
+  /// Optional faint image texture. Left null for a pure dark surface; when set
+  /// it is rendered at very low opacity so it reads as texture, not a picture.
   final String? backgroundAssetPath;
+
+  /// Optional accent color for a subtle top glow (usually the app's accent).
+  final Color? accentGlow;
+
   final Color fallbackColor;
 
   @override
   Widget build(BuildContext context) {
+    final asset = backgroundAssetPath;
     return Stack(
       children: <Widget>[
-        Positioned.fill(
+        // Base: clean vertical charcoal -> near-black.
+        const Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
                 colors: <Color>[
-                  Color(0xFF05070B),
-                  Color(0xFF0E1118),
-                  Color(0xFF121621),
+                  Color(0xFF191C23),
+                  Color(0xFF101216),
+                  Color(0xFF08090C),
                 ],
-              ),
-            ),
-            child: backgroundAssetPath == null
-                ? ColoredBox(color: fallbackColor.withValues(alpha: 0.08))
-                : Image.asset(
-                    backgroundAssetPath!,
-                    fit: BoxFit.cover,
-                    filterQuality: FilterQuality.medium,
-                    errorBuilder: (context, error, stackTrace) =>
-                        ColoredBox(color: fallbackColor),
-                  ),
-          ),
-        ),
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment.center,
-                radius: 0.9,
-                colors: <Color>[
-                  Colors.white.withValues(alpha: 0.08),
-                  Colors.transparent,
-                ],
-                stops: const <double>[0, 1],
+                stops: <double>[0, 0.5, 1],
               ),
             ),
           ),
         ),
-        const _AmbientBlurBlob(
-          top: -150,
-          left: -130,
-          size: 330,
-          color: Color(0x88FF5A5A),
+        if (accentGlow != null)
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0, -0.85),
+                  radius: 1.15,
+                  colors: <Color>[
+                    accentGlow!.withValues(alpha: 0.10),
+                    Colors.transparent,
+                  ],
+                  stops: const <double>[0, 1],
+                ),
+              ),
+            ),
+          ),
+        if (asset != null)
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.06,
+              child: Image.asset(
+                asset,
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.medium,
+                errorBuilder: (context, error, stackTrace) =>
+                    const SizedBox.shrink(),
+              ),
+            ),
+          ),
+        // Faint static grain so large dark areas don't read as flat.
+        Positioned.fill(
+          child: IgnorePointer(child: CustomPaint(painter: _NoisePainter())),
         ),
-        const _AmbientBlurBlob(
-          top: -70,
-          right: -80,
-          size: 260,
-          color: Color(0x884F79FF),
-        ),
-        const _AmbientBlurBlob(
-          bottom: -180,
-          right: -130,
-          size: 350,
-          color: Color(0x88986BFF),
-        ),
+        // Gentle bottom vignette for depth.
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
@@ -83,11 +88,10 @@ class GameBackdrop extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: <Color>[
-                  Colors.white.withValues(alpha: 0.1),
-                  Colors.white.withValues(alpha: 0.02),
-                  Colors.black.withValues(alpha: 0.44),
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.28),
                 ],
-                stops: const <double>[0, 0.45, 1],
+                stops: <double>[0.6, 1],
               ),
             ),
           ),
@@ -98,39 +102,22 @@ class GameBackdrop extends StatelessWidget {
   }
 }
 
-class _AmbientBlurBlob extends StatelessWidget {
-  const _AmbientBlurBlob({
-    required this.size,
-    required this.color,
-    this.top,
-    this.right,
-    this.bottom,
-    this.left,
-  });
-
-  final double size;
-  final Color color;
-  final double? top;
-  final double? right;
-  final double? bottom;
-  final double? left;
+class _NoisePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Deterministic seed so the grain is stable across repaints/frames.
+    final rng = math.Random(7);
+    final paint = Paint();
+    final count = ((size.width * size.height) / 900).clamp(120, 1400).toInt();
+    for (var i = 0; i < count; i++) {
+      final dx = rng.nextDouble() * size.width;
+      final dy = rng.nextDouble() * size.height;
+      final v = rng.nextDouble();
+      paint.color = Colors.white.withValues(alpha: 0.012 + v * 0.02);
+      canvas.drawRect(Rect.fromLTWH(dx, dy, 1.2, 1.2), paint);
+    }
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      top: top,
-      right: right,
-      bottom: bottom,
-      left: left,
-      child: IgnorePointer(
-        child: ImageFiltered(
-          imageFilter: ImageFilter.blur(sigmaX: 70, sigmaY: 70),
-          child: DecoratedBox(
-            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-            child: SizedBox.square(dimension: size),
-          ),
-        ),
-      ),
-    );
-  }
+  bool shouldRepaint(covariant _NoisePainter oldDelegate) => false;
 }
