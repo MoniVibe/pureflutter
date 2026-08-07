@@ -24,13 +24,13 @@ class AdReward {
 /// Google supplies dedicated *test* ad units that always return fill and never
 /// risk an account ban during development. This kit ships those by default.
 ///
-/// TO GO LIVE (the ONLY code edits required):
-///   1. Paste the director-provided IDs into the `_prod*` constants below.
-///   2. Build with `--dart-define=bullethole.ads.prod=true` (or flip
-///      [useProductionAds]'s default to `true`).
-///   3. Update the AndroidManifest `com.google.android.gms.ads.APPLICATION_ID`
-///      meta-data (and iOS `GADApplicationIdentifier`) to the real app ID —
-///      those live in native config and must match [appId].
+/// TO GO LIVE, per app (each app is its OWN AdMob app with its OWN ids):
+///   1. Call [AdConfig.configure] in the app's `main()` with that app's real
+///      production ids (app id + interstitial / rewarded unit ids).
+///   2. Build with `--dart-define=bullethole.ads.prod=true`.
+///   3. Set the AndroidManifest `com.google.android.gms.ads.APPLICATION_ID`
+///      meta-data (and iOS `GADApplicationIdentifier`) to that app's real app
+///      ID — those live in native config and must match [appId].
 class AdConfig {
   const AdConfig._();
 
@@ -56,19 +56,46 @@ class AdConfig {
   static const String _testIosInterstitial =
       'ca-app-pub-3940256099942544/4411468910';
 
-  // --- PRODUCTION placeholders — REPLACE with director-provided IDs. ---
-  // Leaving these as placeholders is safe: [useProductionAds] defaults to false
-  // so they are never used until deliberately switched on.
-  static const String _prodAndroidAppId = 'REPLACE_WITH_PROD_ANDROID_APP_ID';
-  static const String _prodIosAppId = 'REPLACE_WITH_PROD_IOS_APP_ID';
-  static const String _prodAndroidRewarded =
+  // --- PRODUCTION ids — injected PER-APP at startup via [configure]. ---
+  // Each app (Chess, Backgammon, …) is a SEPARATE AdMob app with its OWN ids,
+  // so these are NOT hardcoded in the shared kit. They stay as loud placeholders
+  // until an app calls [configure] in its main(); combined with [useProductionAds]
+  // defaulting to false, no build is ever on real ids by accident.
+  static String _prodAndroidAppId = 'REPLACE_WITH_PROD_ANDROID_APP_ID';
+  static String _prodIosAppId = 'REPLACE_WITH_PROD_IOS_APP_ID';
+  static String _prodAndroidRewarded =
       'REPLACE_WITH_PROD_ANDROID_REWARDED_UNIT_ID';
-  static const String _prodIosRewarded =
-      'REPLACE_WITH_PROD_IOS_REWARDED_UNIT_ID';
-  static const String _prodAndroidInterstitial =
+  static String _prodIosRewarded = 'REPLACE_WITH_PROD_IOS_REWARDED_UNIT_ID';
+  static String _prodAndroidInterstitial =
       'REPLACE_WITH_PROD_ANDROID_INTERSTITIAL_UNIT_ID';
-  static const String _prodIosInterstitial =
+  static String _prodIosInterstitial =
       'REPLACE_WITH_PROD_IOS_INTERSTITIAL_UNIT_ID';
+
+  /// Inject THIS app's real AdMob production ids. Call once from the app's
+  /// `main()` before any ad loads (e.g. right before `AdsBootstrap…initialize`).
+  /// Only the ids you pass are overridden; the rest keep their placeholders.
+  ///
+  /// The Android/iOS **App ID** must ALSO be set in the native manifest /
+  /// Info.plist — the value here is exposed via [appId] for reference/telemetry
+  /// and to keep the two in sync. Selection still gates on [useProductionAds]
+  /// (`--dart-define=bullethole.ads.prod=true`), so a default build ignores these.
+  static void configure({
+    String? androidAppId,
+    String? iosAppId,
+    String? androidInterstitial,
+    String? iosInterstitial,
+    String? androidRewarded,
+    String? iosRewarded,
+  }) {
+    if (androidAppId != null) _prodAndroidAppId = androidAppId;
+    if (iosAppId != null) _prodIosAppId = iosAppId;
+    if (androidInterstitial != null) {
+      _prodAndroidInterstitial = androidInterstitial;
+    }
+    if (iosInterstitial != null) _prodIosInterstitial = iosInterstitial;
+    if (androidRewarded != null) _prodAndroidRewarded = androidRewarded;
+    if (iosRewarded != null) _prodIosRewarded = iosRewarded;
+  }
 
   /// True on iOS at runtime. Uses [defaultTargetPlatform] (not `dart:io`) so the
   /// file stays compilable for web/desktop targets.
